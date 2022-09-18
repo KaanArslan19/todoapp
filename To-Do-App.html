@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" >
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" integrity="sha512-1sCRPdkRXhBV2PBLUdRb4tMg1w2YPf37qatUFeS7zlBy7jJI8Lf4VHwWfZZfpXtYSLy85pkm9GaYVYMfw5BC1A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        .dropdown-toggle::after {
+            display: none;
+        }
+        .task{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+        }
+        .task label.checked{
+            text-decoration: line-through;
+        }
+        .controls{
+            display: flex; 
+            align-items: center;
+            justify-content: space-between;
+
+        }
+        .filters span.active{
+            color: #3c87ff;
+        }
+        .filters span{
+            margin-right: 5px;
+            font-size: 15px;
+            column-rule-color: #444444;
+            cursor: pointer;
+
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        Todo-App
+                    </div>
+                    <div class="card-body">
+                        <form >
+                            <div class="input-group">
+                                <input type="text" id="txtTaskName" class="form-control">
+                                <button type="button" class="btn btn-sm btn-primary" id="btnAddNewTask">Add</button> <!-- if we dont define type feature we can nnot see the result because it refreshes the page. -->
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header controls">
+                        <div class="filters">
+                            <span class="active" id="all">All</span>
+                            <span  id="pending">Bucket List</span>
+                            <span  id="completed">Done</span>
+                        </div>
+                        <button id="btnClear" class="btn btn-danger float-end">Delete</button>
+                    </div>
+                    <ul id="task-list" class="list-group list-group-flush">
+                        <li class="task list-group-item">
+                            <div class="form-check">
+                                <input type="checkbox" id="1" class="form-check-input">
+                                <label for="1" class="form-check-label">Görev 1</label>
+                            </div>
+                            
+                        </ul>
+                    </div>
+                </div>
+            </div>
+    </div>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" >
+    </script>
+
+    <script>           
+        let tasklist = [];
+        if (localStorage.getItem("tasklist") !== null){
+            tasklist = JSON.parse(localStorage.getItem("tasklist")); //string values are stored in local storage in the form of JSON structure.
+        }
+    let editID;
+    let iseditTask = false;
+    const taskinput = document.querySelector("#txtTaskName");
+    const btnClear = document.querySelector("#btnClear"); 
+    const filters = document.querySelectorAll(".filters span");
+    displayTask("all");
+
+       
+       function displayTask(filter){
+        let ul = document.getElementById("task-list");
+        ul.innerHTML = ""; 
+        if(tasklist.length == 0){
+            ul.innerHTML = "<p class = 'p-3 m-0'>To-Do List is Empty. </p>"
+        }else{
+            for(let task of tasklist){ 
+                let completed = task.state == "completed" ? "checked": ""; 
+                if (filter == task.state || filter == "all"){
+                    let li = `  
+            <li class="task list-group-item">
+                        <div class="form-check">
+                            <input type="checkbox" onclick="UpdateStatus(this)" id="${task.id}" class="form-check-input " ${completed}>
+                            <label for="${task.id}" class="form-check-label ${completed}"> ${task.taskname}</label>
+                        </div>
+
+                        <div class="dropdown">
+                <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa-solid fa-ellipsis"></i>
+                </button>
+                    <ul class="dropdown-menu">
+                       <li><a onclick="deleteTask(${task.id})" class="dropdown-item" href="#"><i class="fa-solid fa-trash-can"></i> Delete</a></li>  
+                       <li><a onclick='editTask(${task.id}, "${task.taskname}")' class="dropdown-item" href="#"><i class="fa-solid fa-sliders"></i> Edit</a></li>
+                     
+                    </ul>
+                        </div>
+            </li>
+          
+            ` ;          
+                  ul.insertAdjacentHTML("beforeend", li);
+                }
+        }
+       }
+
+        }
+        
+        document.querySelector("#btnAddNewTask").addEventListener("click", NewTask ); 
+        var add_button_enter = document.getElementById("txtTaskName");
+        add_button_enter.addEventListener("keypress", function(event){ 
+            if(event.key == "Enter"){              
+                event.preventDefault();
+                document.getElementById("btnAddNewTask").click();
+                
+            }
+
+        });
+        for (let span of filters){
+            span.addEventListener("click", function(){
+                document.querySelector("span.active").classList.remove("active"); // delete active class on all elements.
+                span.classList.add("active");//add active class onn clicked element.
+                displayTask(span.id);
+            })
+        }
+
+        function NewTask(event){
+            if(taskinput.value ==""){
+                alert("Add assignment !");
+            }else{          
+                if (!iseditTask){
+                //add
+                tasklist.push({"id": tasklist.length + 1, "taskname": taskinput.value, "state": "pending"});
+                }else{
+                    // update
+                    for(let task of tasklist){
+                        if(task.id == editID){
+                            task.taskname = taskinput.value;
+                        }
+                        iseditTask = false;
+                    }                                       
+                }
+                
+                taskinput.value = ""; //clears the textbox value when its clicked
+                displayTask(document.querySelector("span.active").id);      
+                localStorage.setItem("tasklist", JSON.stringify(tasklist)); //convert the data to JSON type via setItem.     
+                
+            }         
+            event.preventDefault();
+
+        }
+        function deleteTask(id){
+            console.log(id); // ID control
+            let deleteID;
+            for(let index in tasklist){
+                if(tasklist[index].id == id){
+                    deleteID = index;
+                }
+            }
+            tasklist.splice(deleteID, 1); //delete 1 element starting from that index.          
+             displayTask(document.querySelector(".span.active"));          
+
+        }
+
+        function editTask(taskID, taskName){
+                 editID = taskID;
+                 iseditTask = true; //true when button is clicked
+                 taskinput.value = taskName;
+                 taskinput.focus();
+                 taskinput.classList.add("active"); 
+                 console.log("edit id:", editID);
+                 console.log("edit mode", iseditTask);
+
+             }
+
+        btnClear.addEventListener("click", function(){
+                 tasklist.splice(0, tasklist.length);
+                 displayTask();
+             })
+
+        function UpdateStatus(selectedTask){
+            
+            console.log(selectedTask.nextElementSibling);
+            let label = selectedTask.nextElementSibling;
+            let state;
+            if(selectedTask.checked){
+                label.classList.add("checked");
+                state = "completed";
+            }else{
+                label.classList.remove("checked");
+                state = "pending";
+            }
+            for(let task of tasklist){
+                if(task.id == selectedTask.id){
+                    task.state = state;
+                }
+            }       
+        }       
+    </script>
+    
+</body>
+</html>
